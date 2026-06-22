@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="90-Day Challenge">
+<title>90-Day Challenge</title>
+<style>
+  :root {
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --teal-dark: #0F6E56;
+    --teal-deep: #085041;
+    --amber: #EF9F27;
+    --amber-light: #FAEEDA;
+    --amber-dark: #633806;
+    --coral: #D85A30;
+    --purple-light: #EEEDFE;
+    --purple-dark: #3C3489;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --gray-bg: #F7F6F3;
+    --gray-light: #EFEFEC;
+    --gray-mid: #C8C7C0;
+    --gray-text: #888780;
+    --text: #1A1A18;
+    --text-secondary: #5F5E5A;
+    --text-hint: #A8A79F;
+    --white: #FFFFFF;
+    --border: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.15);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--white);
+    border-bottom: 0.5px solid var(--border);
+    padding: 16px 20px 12px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .app-name { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .day-nav { display: flex; align-items: center; gap: 6px; }
+  .nav-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 0.5px solid var(--border-mid);
+    background: var(--gray-bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; color: var(--text-secondary);
+  }
+  .nav-btn:active { background: var(--gray-light); }
+  .day-chip {
+    font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    background: var(--gray-bg); border-radius: 99px;
+    padding: 4px 12px; border: 0.5px solid var(--border-mid);
+    min-width: 110px; text-align: center;
+  }
+  .day-num-row { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  .day-badge {
+    font-size: 12px; color: var(--teal-dark); background: var(--teal-light);
+    border-radius: 99px; padding: 3px 10px; font-weight: 500;
+  }
+  .progress-mini { flex: 1; }
+  .prog-track { height: 4px; background: var(--gray-light); border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 4px; background: var(--teal); border-radius: 99px; transition: width 0.3s; }
+  .prog-pct { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+
+  /* TABS */
+  .tab-bar {
+    display: flex; gap: 0;
+    background: var(--white);
+    border-bottom: 0.5px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 1; padding: 11px 8px; text-align: center;
+    font-size: 13px; font-weight: 500; color: var(--text-hint);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    white-space: nowrap; min-width: 60px;
+    transition: color 0.15s;
+  }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* MAIN */
+  .main {
+    padding: 16px 16px calc(24px + var(--safe-bottom));
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* STAT CARDS */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 0.5px solid var(--border); padding: 12px 14px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; }
+  .stat-val { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .stat-val.good { color: var(--teal); }
+  .stat-val.warn { color: var(--coral); }
+  .stat-sub { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+  /* SECTION */
+  .section { margin-bottom: 20px; }
+  .section-head {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 8px; padding: 0 2px;
+  }
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    border: 0.5px solid var(--border); overflow: hidden;
+  }
+
+  /* CHECKLIST */
+  .check-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 16px; cursor: pointer;
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .check-row:last-child { border-bottom: none; }
+  .check-row:active { background: var(--gray-bg); }
+  .check-row.done { opacity: 0.55; }
+  .checkbox {
+    width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    border: 1.5px solid var(--gray-mid);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px; transition: all 0.15s; font-size: 13px;
+  }
+  .check-row.done .checkbox { background: var(--teal); border-color: var(--teal); }
+  .check-main { font-size: 14px; line-height: 1.4; }
+  .check-row.done .check-main { text-decoration: line-through; color: var(--text-hint); }
+  .check-sub { font-size: 12px; color: var(--text-hint); margin-top: 2px; }
+
+  /* NUTRITION */
+  .nut-targets { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 14px 16px; margin-bottom: 12px; }
+  .nut-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .nut-row:not(:last-child) { border-bottom: 0.5px solid var(--border); }
+  .nut-label { font-size: 13px; color: var(--text-secondary); min-width: 70px; }
+  .nut-track { flex: 1; height: 5px; background: var(--gray-light); border-radius: 99px; overflow: hidden; }
+  .nut-fill { height: 5px; border-radius: 99px; transition: width 0.3s; }
+  .nut-val { font-size: 13px; font-weight: 600; min-width: 80px; text-align: right; }
+
+  .food-add { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 14px 16px; margin-bottom: 12px; }
+  .food-add-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .food-inputs { display: grid; grid-template-columns: 1fr 64px 64px; gap: 6px; margin-bottom: 8px; }
+  .food-input {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm); font-size: 14px; color: var(--text);
+    background: var(--gray-bg); outline: none;
+    -webkit-appearance: none;
+  }
+  .food-input:focus { border-color: var(--teal); }
+  .food-input::placeholder { color: var(--text-hint); }
+  .food-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .food-btn {
+    padding: 10px; border-radius: var(--radius-sm); font-size: 13px;
+    font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s;
+  }
+  .food-btn:active { opacity: 0.75; }
+  .food-btn.primary { background: var(--teal); color: white; }
+  .food-btn.secondary { background: var(--amber-light); color: var(--amber-dark); border: 1px solid var(--amber); }
+
+  .food-log-card { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; margin-bottom: 12px; }
+  .food-log-head { padding: 10px 16px; border-bottom: 0.5px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-hint); letter-spacing: 0.04em; text-transform: uppercase; }
+  .food-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 0.5px solid var(--border); }
+  .food-item:last-child { border-bottom: none; }
+  .food-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .food-name-col { flex: 1; font-size: 14px; }
+  .food-treat-tag { font-size: 10px; color: var(--amber-dark); background: var(--amber-light); padding: 1px 6px; border-radius: 99px; margin-left: 4px; }
+  .food-macros { font-size: 12px; color: var(--text-hint); }
+  .food-del { font-size: 18px; color: var(--text-hint); padding: 0 0 0 8px; cursor: pointer; background: none; border: none; line-height: 1; }
+  .empty-state { padding: 24px 16px; text-align: center; font-size: 13px; color: var(--text-hint); }
+
+  .treat-info { background: var(--amber-light); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--amber-dark); line-height: 1.5; }
+  .treat-info strong { font-weight: 600; }
+
+  /* PROGRESS */
+  .week-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 16px; }
+  .w-day { text-align: center; }
+  .w-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    margin: 0 auto 4px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    border: 1.5px solid var(--border-mid);
+    background: var(--gray-light); color: var(--text-hint);
+  }
+  .w-circle.great { background: var(--teal-light); color: var(--teal-deep); border-color: var(--teal); }
+  .w-circle.ok { background: var(--amber-light); color: var(--amber-dark); border-color: var(--amber); }
+  .w-circle.today { border: 2px solid var(--teal); }
+  .w-day-label { font-size: 10px; color: var(--text-hint); }
+
+  .dot-map-card { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 14px 16px; margin-bottom: 12px; }
+  .dot-map-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .dot-map-title { font-size: 14px; font-weight: 600; }
+  .dot-map-sub { font-size: 13px; color: var(--text-hint); }
+  .dot-grid { display: flex; flex-wrap: wrap; gap: 3px; }
+  .cdot { width: 11px; height: 11px; border-radius: 3px; background: var(--gray-light); cursor: default; }
+  .cdot.done { background: var(--teal); }
+  .cdot.treat { background: var(--amber); }
+  .cdot.today { outline: 2px solid var(--teal); outline-offset: 1px; }
+  .dot-legend { display: flex; gap: 14px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-hint); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .schedule-card { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
+  .sched-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 0.5px solid var(--border); }
+  .sched-row:last-child { border-bottom: none; }
+  .sched-day { font-size: 13px; font-weight: 600; min-width: 34px; color: var(--text-secondary); }
+  .sched-badge { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 99px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: white;
+    padding: 10px 18px; border-radius: 99px; font-size: 13px; font-weight: 500;
+    z-index: 999; transition: transform 0.3s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* UTIL */
+  .mt8 { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .hint { font-size: 12px; color: var(--text-hint); padding: 0 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="app-name">90-Day Challenge</div>
+    <div class="day-nav">
+      <button class="nav-btn" onclick="changeDay(-1)" aria-label="previous day">&#8249;</button>
+      <div class="day-chip" id="day-chip">Today</div>
+      <button class="nav-btn" onclick="changeDay(1)" aria-label="next day">&#8250;</button>
+    </div>
+  </div>
+  <div class="day-num-row">
+    <div class="day-badge" id="day-badge">Day 1 of 90</div>
+    <div class="progress-mini">
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-pct" id="prog-pct">0 of 12 habits done</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="showPanel('today',this)">Today</div>
+  <div class="tab" onclick="showPanel('nutrition',this)">Nutrition</div>
+  <div class="tab" onclick="showPanel('progress',this)">Progress</div>
+  <div class="tab" onclick="showPanel('schedule',this)">Schedule</div>
+</div>
+
+<div class="main">
+
+  <!-- TODAY -->
+  <div id="panel-today" class="panel active">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Habits done</div>
+        <div class="stat-val" id="stat-done">0</div>
+        <div class="stat-sub" id="stat-done-sub">of 12 today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Protein today</div>
+        <div class="stat-val" id="stat-prot">0g</div>
+        <div class="stat-sub">target 115g</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Calories today</div>
+        <div class="stat-val" id="stat-cal">0</div>
+        <div class="stat-sub">target ~1,775</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Flex days left</div>
+        <div class="stat-val" id="stat-flex">18</div>
+        <div class="stat-sub">of 18 total</div>
+      </div>
+    </div>
+    <div id="checklist-body"></div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div id="panel-nutrition" class="panel">
+    <div class="nut-targets">
+      <div class="nut-row">
+        <span class="nut-label">Calories</span>
+        <div class="nut-track"><div class="nut-fill" id="cal-fill" style="width:0%;background:#378ADD"></div></div>
+        <span class="nut-val" id="cal-val">0 / 1,775</span>
+      </div>
+      <div class="nut-row">
+        <span class="nut-label">Protein</span>
+        <div class="nut-track"><div class="nut-fill" id="prot-fill" style="width:0%;background:#1D9E75"></div></div>
+        <span class="nut-val" id="prot-val">0 / 115g</span>
+      </div>
+      <div class="nut-row">
+        <span class="nut-label">Flex days</span>
+        <div class="nut-track"><div class="nut-fill" id="flex-fill" style="width:0%;background:#EF9F27"></div></div>
+        <span class="nut-val" id="flex-val">0 / 18</span>
+      </div>
+    </div>
+
+    <div class="food-add">
+      <div class="food-add-title">Log a meal or food</div>
+      <div class="food-inputs">
+        <input class="food-input" type="text" id="fi-name" placeholder="e.g. 2 eggs, chicken, rice" />
+        <input class="food-input" type="number" id="fi-cal" placeholder="kcal" inputmode="numeric" min="0" />
+        <input class="food-input" type="number" id="fi-prot" placeholder="prot g" inputmode="numeric" min="0" />
+      </div>
+      <div class="food-btns">
+        <button class="food-btn primary" onclick="logFood(false)">+ Add food</button>
+        <button class="food-btn secondary" onclick="logFood(true)">+ Flex / treat</button>
+      </div>
+    </div>
+
+    <div class="food-log-card" id="food-log-card">
+      <div class="food-log-head">Today's log</div>
+      <div id="food-log-body"><div class="empty-state">Nothing logged yet</div></div>
+    </div>
+
+    <div class="treat-info">
+      <strong>80/20 rule:</strong> 18 flex days across 90 days — roughly one per week. A flex day might be a meal out, a glass of wine, or a day where you don't track. It's built in, not a failure.
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="panel-progress" class="panel">
+    <div class="section-head">This week</div>
+    <div class="week-grid" id="week-grid"></div>
+
+    <div class="dot-map-card">
+      <div class="dot-map-head">
+        <span class="dot-map-title">90-day map</span>
+        <span class="dot-map-sub" id="dot-map-sub">Day 1 of 90</span>
+      </div>
+      <div class="dot-grid" id="dot-grid"></div>
+      <div class="dot-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Strong day</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>Flex day</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#E0DED8"></div>Upcoming</div>
+      </div>
+    </div>
+
+    <div class="section-head mt12">Weekly stats</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Best streak</div>
+        <div class="stat-val good" id="stat-streak">0</div>
+        <div class="stat-sub">days in a row</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg completion</div>
+        <div class="stat-val" id="stat-avg">0%</div>
+        <div class="stat-sub">past 7 days</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="panel-schedule" class="panel">
+    <div class="section-head">Weekly training plan</div>
+    <div class="schedule-card" id="schedule-card"></div>
+    <div class="hint mt8">* Sunday: teaching every second week</div>
+
+    <div class="section-head mt12">Your targets</div>
+    <div class="card">
+      <div class="check-row" style="cursor:default">
+        <div style="flex:1">
+          <div class="check-main">Daily calories</div>
+          <div class="check-sub">~1,700–1,850 kcal · up to ~1,900 on PT days</div>
+        </div>
+      </div>
+      <div class="check-row" style="cursor:default">
+        <div style="flex:1">
+          <div class="check-main">Daily protein</div>
+          <div class="check-sub">110–120g · ~1.6g per kg bodyweight</div>
+        </div>
+      </div>
+      <div class="check-row" style="cursor:default">
+        <div style="flex:1">
+          <div class="check-main">80/20 rule</div>
+          <div class="check-sub">18 flex days across 90 days — ~1 per week</div>
+        </div>
+      </div>
+      <div class="check-row" style="cursor:default">
+        <div style="flex:1">
+          <div class="check-main">Protein timing</div>
+          <div class="check-sub">Eat within 45 mins after PT sessions</div>
+        </div>
+      </div>
+      <div class="check-row" style="cursor:default;border-bottom:none">
+        <div style="flex:1">
+          <div class="check-main">Sleep</div>
+          <div class="check-sub">7–9 hours — where the body composition magic happens</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head mt12">Protein quick reference</div>
+    <div class="card">
+      <div class="check-row" style="cursor:default"><div style="flex:1"><div class="check-main">2 eggs</div><div class="check-sub">~12g protein · ~150 kcal</div></div></div>
+      <div class="check-row" style="cursor:default"><div style="flex:1"><div class="check-main">175g oyster blade (uncooked)</div><div class="check-sub">~38–40g protein · ~330–350 kcal</div></div></div>
+      <div class="check-row" style="cursor:default"><div style="flex:1"><div class="check-main">Greek yoghurt (170g)</div><div class="check-sub">~15–17g protein · ~100 kcal</div></div></div>
+      <div class="check-row" style="cursor:default"><div style="flex:1"><div class="check-main">Chicken breast (150g cooked)</div><div class="check-sub">~42g protein · ~220 kcal</div></div></div>
+      <div class="check-row" style="cursor:default"><div style="flex:1"><div class="check-main">Salmon fillet (180g)</div><div class="check-sub">~36g protein · ~370 kcal</div></div></div>
+      <div class="check-row" style="cursor:default;border-bottom:none"><div style="flex:1"><div class="check-main">Cottage cheese (120g)</div><div class="check-sub">~14g protein · ~90 kcal</div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const START_DATE = new Date(2026, 5, 23);
+const TOTAL_DAYS = 90;
+const CAL_TARGET = 1775;
+const PROT_TARGET = 115;
+const TREAT_MAX = 18;
+const HABITS = [
+  { cat: 'Movement', items: [
+    { text: 'Complete scheduled session', sub: 'PT, Pilates class, or teaching counts' },
+    { text: 'Hit 8,000+ steps', sub: 'Walking is underrated for fat loss' },
+  ]},
+  { cat: 'Nutrition', items: [
+    { text: 'Protein with every meal', sub: 'Aim for 115g across the day' },
+    { text: 'Drink 2–2.5L water', sub: 'More on PT days' },
+    { text: '2+ servings of vegetables', sub: 'Volume without the calories' },
+    { text: 'No late-night snacking after 8pm', sub: 'Helps body composition and sleep' },
+  ]},
+  { cat: 'Recovery', items: [
+    { text: '7–9 hours of sleep', sub: 'Non-negotiable for muscle and mood' },
+    { text: '5 mins stretching or breathing', sub: 'Before bed or after training' },
+    { text: 'Screen-free 30 mins before sleep', sub: 'Supports melatonin production' },
+  ]},
+  { cat: 'Mind', items: [
+    { text: 'Gratitude or journalling', sub: 'Even 2–3 sentences counts' },
+    { text: 'One thing just for enjoyment', sub: 'Not productive — just enjoyable' },
+    { text: 'Connect with someone you care about', sub: 'Text, call, catch up — it counts' },
+  ]},
+];
+const SCHEDULE = [
+  { day: 'Mon', label: 'PT session', bg: '#EEEDFE', color: '#3C3489' },
+  { day: 'Tue', label: 'Teach Pilates', bg: '#FAEEDA', color: '#633806' },
+  { day: 'Wed', label: 'Pilates class', bg: '#E1F5EE', color: '#085041' },
+  { day: 'Thu', label: 'PT session', bg: '#EEEDFE', color: '#3C3489' },
+  { day: 'Fri', label: 'Pilates class', bg: '#E1F5EE', color: '#085041' },
+  { day: 'Sat', label: 'Active rest', bg: '#E6F1FB', color: '#0C447C' },
+  { day: 'Sun', label: 'Rest / Teach *', bg: '#F1EFE8', color: '#444441' },
+];
+
+let state = { offset: 0, days: {} };
+
+function saveState() {
+  try { localStorage.setItem('challenge90', JSON.stringify(state)); } catch(e) {}
+}
+function loadState() {
+  try {
+    const s = localStorage.getItem('challenge90');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+function getKey(offset) {
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0,10);
+}
+function currentKey() { return getKey(state.offset); }
+function getDay(key) {
+  if (!state.days[key]) state.days[key] = { checked: {}, foods: [], isTreat: false };
+  return state.days[key];
+}
+function today() { return getDay(currentKey()); }
+
+function totalHabits() { return HABITS.reduce((a,s) => a+s.items.length, 0); }
+function doneCount() { const d = today(); return Object.values(d.checked).filter(Boolean).length; }
+function dayNutrition() {
+  const d = today();
+  let cal = 0, prot = 0;
+  d.foods.forEach(f => { cal += (f.cal||0); prot += (f.prot||0); });
+  return { cal, prot };
+}
+function treatDaysUsed() { return Object.values(state.days).filter(d => d.isTreat).length; }
+
+function changeDay(dir) {
+  const next = state.offset + dir;
+  if (next < 0 || next >= TOTAL_DAYS) return;
+  state.offset = next;
+  saveState();
+  render();
+}
+
+function toggleCheck(cat, idx) {
+  const d = today();
+  const k = cat + idx;
+  d.checked[k] = !d.checked[k];
+  saveState();
+  updateHeader();
+  renderChecklist();
+  updateNutritionPanel();
+}
+
+function logFood(isTreat) {
+  const name = document.getElementById('fi-name').value.trim();
+  const cal = parseInt(document.getElementById('fi-cal').value) || 0;
+  const prot = parseInt(document.getElementById('fi-prot').value) || 0;
+  if (!name) { showToast('Enter a food name'); return; }
+  const d = today();
+  d.foods.push({ name, cal, prot, treat: isTreat });
+  if (isTreat) d.isTreat = true;
+  document.getElementById('fi-name').value = '';
+  document.getElementById('fi-cal').value = '';
+  document.getElementById('fi-prot').value = '';
+  saveState();
+  updateHeader();
+  updateNutritionPanel();
+  showToast(isTreat ? 'Flex day logged' : 'Food added');
+}
+
+function removeFood(idx) {
+  const d = today();
+  d.foods.splice(idx,1);
+  d.isTreat = d.foods.some(f => f.treat);
+  saveState();
+  updateHeader();
+  updateNutritionPanel();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function renderDayLabel() {
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + state.offset);
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const chip = state.offset === 0
+    ? 'Today · ' + DAYS[d.getDay()]
+    : DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+  document.getElementById('day-chip').textContent = chip;
+  document.getElementById('day-badge').textContent = 'Day ' + (state.offset+1) + ' of 90';
+}
+
+function updateHeader() {
+  const n = totalHabits();
+  const done = doneCount();
+  const pct = n > 0 ? Math.round(done/n*100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = done + ' of ' + n + ' habits done';
+}
+
+function renderChecklist() {
+  const d = today();
+  let html = '';
+  HABITS.forEach(s => {
+    html += '<div class="section"><div class="section-head">' + s.cat + '</div><div class="card">';
+    s.items.forEach((item, idx) => {
+      const k = s.cat + idx;
+      const done = d.checked[k];
+      html += '<div class="check-row' + (done?' done':'') + '" onclick="toggleCheck(\'' + s.cat + '\',' + idx + ')">'
+        + '<div class="checkbox">' + (done ? '&#10003;' : '') + '</div>'
+        + '<div><div class="check-main">' + item.text + '</div><div class="check-sub">' + item.sub + '</div></div>'
+        + '</div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('checklist-body').innerHTML = html;
+
+  const done = doneCount();
+  const n = totalHabits();
+  const { cal, prot } = dayNutrition();
+  const flex = treatDaysUsed();
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-done').className = 'stat-val' + (done >= n ? ' good' : '');
+  document.getElementById('stat-prot').textContent = prot + 'g';
+  document.getElementById('stat-prot').className = 'stat-val' + (prot >= PROT_TARGET ? ' good' : '');
+  document.getElementById('stat-cal').textContent = cal.toLocaleString();
+  document.getElementById('stat-cal').className = 'stat-val' + (cal > CAL_TARGET * 1.12 ? ' warn' : '');
+  document.getElementById('stat-flex').textContent = TREAT_MAX - flex;
+  document.getElementById('stat-flex').className = 'stat-val' + (TREAT_MAX - flex <= 3 ? ' warn' : ' good');
+}
+
+function updateNutritionPanel() {
+  const { cal, prot } = dayNutrition();
+  const treats = treatDaysUsed();
+  document.getElementById('cal-fill').style.width = Math.min(100, Math.round(cal/CAL_TARGET*100)) + '%';
+  document.getElementById('prot-fill').style.width = Math.min(100, Math.round(prot/PROT_TARGET*100)) + '%';
+  document.getElementById('flex-fill').style.width = Math.min(100, Math.round(treats/TREAT_MAX*100)) + '%';
+  document.getElementById('cal-val').textContent = cal.toLocaleString() + ' / 1,775';
+  document.getElementById('prot-val').textContent = prot + ' / 115g';
+  document.getElementById('flex-val').textContent = treats + ' / 18';
+
+  const d = today();
+  let fhtml = '';
+  if (d.foods.length === 0) {
+    fhtml = '<div class="empty-state">Nothing logged yet — add your meals above</div>';
+  } else {
+    d.foods.forEach((f,i) => {
+      fhtml += '<div class="food-item">'
+        + '<div class="food-dot" style="background:' + (f.treat ? '#EF9F27' : '#1D9E75') + '"></div>'
+        + '<div class="food-name-col">' + f.name + (f.treat ? '<span class="food-treat-tag">flex</span>' : '') + '</div>'
+        + '<div class="food-macros">' + (f.cal||0) + ' kcal · ' + (f.prot||0) + 'g</div>'
+        + '<button class="food-del" onclick="removeFood(' + i + ')" aria-label="remove">&times;</button>'
+        + '</div>';
+    });
+  }
+  document.getElementById('food-log-body').innerHTML = fhtml;
+}
+
+function renderProgress() {
+  const off = state.offset;
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + off);
+  const dow = d.getDay();
+  const DNAMES = ['S','M','T','W','T','F','S'];
+  const DFULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let wHtml = '';
+  for (let i = 0; i < 7; i++) {
+    const o = off - dow + i;
+    const isToday = o === off;
+    const key = getKey(o);
+    const dd = state.days[key];
+    const n = totalHabits();
+    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+    const pct = done / n;
+    let cls = '';
+    if (o >= 0 && o < TOTAL_DAYS) {
+      if (o <= off && done > 0) cls = pct >= 0.75 ? 'great' : 'ok';
+    }
+    const label = (o <= off && done > 0) ? Math.round(pct*100)+'%' : DFULL[i].slice(0,1);
+    wHtml += '<div class="w-day"><div class="w-circle ' + cls + (isToday?' today':'') + '">' + label + '</div><div class="w-day-label">' + DFULL[i] + '</div></div>';
+  }
+  document.getElementById('week-grid').innerHTML = wHtml;
+
+  let dots = '';
+  for (let i = 0; i < TOTAL_DAYS; i++) {
+    const k = getKey(i);
+    const dd = state.days[k];
+    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+    let cls = i === off ? 'today' : (i < off ? (dd && dd.isTreat ? 'treat' : (done > 0 ? 'done' : '')) : '');
+    dots += '<div class="cdot ' + cls + '" title="Day '+(i+1)+'"></div>';
+  }
+  document.getElementById('dot-grid').innerHTML = dots;
+  document.getElementById('dot-map-sub').textContent = 'Day ' + (off+1) + ' of 90';
+
+  let streak = 0, best = 0, cur = 0;
+  for (let i = 0; i < off; i++) {
+    const k = getKey(i);
+    const dd = state.days[k];
+    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+    if (done > 0) { cur++; if (cur > best) best = cur; } else cur = 0;
+  }
+  document.getElementById('stat-streak').textContent = best;
+
+  let weekTotal = 0, weekDone = 0;
+  for (let i = Math.max(0, off-6); i <= off; i++) {
+    const k = getKey(i);
+    const dd = state.days[k];
+    weekTotal += totalHabits();
+    weekDone += dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+  }
+  const avgPct = weekTotal > 0 ? Math.round(weekDone/weekTotal*100) : 0;
+  document.getElementById('stat-avg').textContent = avgPct + '%';
+  document.getElementById('stat-avg').className = 'stat-val' + (avgPct >= 75 ? ' good' : (avgPct >= 50 ? '' : ' warn'));
+}
+
+function renderSchedule() {
+  let html = '';
+  SCHEDULE.forEach(s => {
+    html += '<div class="sched-row"><div class="sched-day">' + s.day + '</div>'
+      + '<div class="sched-badge" style="background:' + s.bg + ';color:' + s.color + '">' + s.label + '</div></div>';
+  });
+  document.getElementById('schedule-card').innerHTML = html;
+}
+
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'progress') renderProgress();
+  if (id === 'nutrition') updateNutritionPanel();
+}
+
+function render() {
+  renderDayLabel();
+  updateHeader();
+  renderChecklist();
+  updateNutritionPanel();
+  renderSchedule();
+}
+
+loadState();
+render();
+</script>
+</body>
+</html>
