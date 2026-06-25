@@ -348,10 +348,10 @@
 
 <script>
 const START_DATE = new Date(2026, 5, 23);
-const TOTAL_DAYS = 90;
 const CAL_TARGET = 1775;
 const PROT_TARGET = 115;
 const TREAT_MAX = 18;
+const DOT_WINDOW = 90; // rolling window shown in progress map
 
 // Built-in favourites (Giorgia's common foods)
 const DEFAULT_FAVS = [
@@ -402,17 +402,31 @@ const SCHEDULE = [
 
 let state = { offset: 0, days: {} };
 let userFavs = [];
+let foodMemory = []; // remembered manual entries
 let pendingFood = null;
+
+function getTodayOffset() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), START_DATE.getDate());
+  const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
 
 function save() { try { localStorage.setItem('challenge90_v3', JSON.stringify(state)); } catch(e) {} }
 function saveFavs() { try { localStorage.setItem('challenge90_favs', JSON.stringify(userFavs)); } catch(e) {} }
+function saveMemory() { try { localStorage.setItem('challenge90_foodmem', JSON.stringify(foodMemory)); } catch(e) {} }
 function load() {
   try {
     const s = localStorage.getItem('challenge90_v3');
     if (s) state = JSON.parse(s);
     const f = localStorage.getItem('challenge90_favs');
     if (f) userFavs = JSON.parse(f);
+    const m = localStorage.getItem('challenge90_foodmem');
+    if (m) foodMemory = JSON.parse(m);
   } catch(e) {}
+  // Always set offset to today's real date on load
+  state.offset = getTodayOffset();
 }
 
 function getKey(offset) {
@@ -437,7 +451,7 @@ function treatDaysUsed() { return Object.values(state.days).filter(d => d.isTrea
 
 function changeDay(dir) {
   const next = state.offset + dir;
-  if (next < 0 || next >= TOTAL_DAYS) return;
+  if (next < 0 || next > getTodayOffset()) return;
   state.offset = next;
   pendingFood = null;
   hideLookupResult();
@@ -624,7 +638,10 @@ function confirmFood(isTreat) {
   const d = today();
   d.foods.push({ ...pendingFood });
   if (isTreat) d.isTreat = true;
+  rememberFood(pendingFood.name, pendingFood.cal, pendingFood.prot);
   document.getElementById('fi-smart').value = '';
+  const box = document.getElementById('suggestions-box');
+  if (box) box.style.display = 'none';
   hideLookupResult();
   document.getElementById('lookup-error').classList.remove('visible');
   save();
@@ -645,6 +662,8 @@ function logManual(isTreat) {
   const d = today();
   d.foods.push({ name, cal, prot, treat: isTreat });
   if (isTreat) d.isTreat = true;
+  // Remember this food for future suggestions
+  rememberFood(name, cal, prot);
   document.getElementById('mi-name').value = '';
   document.getElementById('mi-cal').value = '';
   document.getElementById('mi-prot').value = '';
@@ -652,6 +671,63 @@ function logManual(isTreat) {
   updateStats();
   updateNutritionPanel();
   showToast(isTreat ? 'Flex day logged ✓' : 'Food added ✓');
+}
+
+function rememberFood(name, cal, prot) {
+  const existing = foodMemory.findIndex(f => f.name.toLowerCase() === name.toLowerCase());
+  if (existing >= 0) {
+    foodMemory[existing] = { name, cal, prot, count: (foodMemory[existing].count || 1) + 1 };
+  } else {
+    foodMemory.push({ name, cal, prot, count: 1 });
+  }
+  // Keep most recent/frequent 50
+  foodMemory.sort((a, b) => (b.count || 1) - (a.count || 1));
+  if (foodMemory.length > 50) foodMemory.length = 50;
+  saveMemory();
+}
+
+function getSuggestions(query) {
+  if (!query || query.length < 2) return [];
+  const q = query.toLowerCase();
+  const all = [...foodMemory, ...DEFAULT_FAVS, ...userFavs];
+  const seen = new Set();
+  return all.filter(f => {
+    if (seen.has(f.name.toLowerCase())) return false;
+    seen.add(f.name.toLowerCase());
+    return f.name.toLowerCase().includes(q);
+  }).slice(0, 5);
+}
+
+function renderSuggestions(query) {
+  let box = document.getElementById('suggestions-box');
+  const suggestions = getSuggestions(query);
+  if (!suggestions.length || !query) { if (box) box.style.display = 'none'; return; }
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'suggestions-box';
+    box.style.cssText = 'background:var(--white);border:1px solid var(--border-mid);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;';
+    const row = document.getElementById('fi-smart').parentNode;
+    row.parentNode.insertBefore(box, row.nextSibling);
+  }
+  box.style.display = 'block';
+  box.innerHTML = suggestions.map((s, i) =>
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:0.5px solid var(--border);cursor:pointer;font-size:13px;" onclick="selectSuggestion(' + i + ')">'
+    + '<span>' + s.name + '</span>'
+    + '<span style="color:var(--text-hint);font-size:12px;">' + s.cal + ' kcal · ' + s.prot + 'g</span>'
+    + '</div>'
+  ).join('').replace(/border-bottom[^;]+;([^<]*<\/div>\s*$)/, '$1');
+  // Store suggestions for selection
+  box._suggestions = suggestions;
+}
+
+function selectSuggestion(idx) {
+  const box = document.getElementById('suggestions-box');
+  if (!box || !box._suggestions) return;
+  const s = box._suggestions[idx];
+  pendingFood = { name: s.name, cal: s.cal, prot: s.prot, treat: false };
+  document.getElementById('fi-smart').value = s.name;
+  box.style.display = 'none';
+  showLookupResult(s.name, s.cal, s.prot);
 }
 
 function removeFood(idx) {
@@ -678,7 +754,7 @@ function renderDayLabel() {
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const chip = state.offset === 0 ? 'Today · ' + DAYS[d.getDay()] : DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
   document.getElementById('day-chip').textContent = chip;
-  document.getElementById('day-badge').textContent = 'Day ' + (state.offset + 1) + ' of 90';
+  document.getElementById('day-badge').textContent = 'Day ' + (state.offset + 1);
 }
 
 function updateHeader() {
@@ -767,14 +843,17 @@ function renderProgress() {
     const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
     const pct = done / n;
     let cls = '';
-    if (o >= 0 && o < TOTAL_DAYS && o <= off && done > 0) cls = pct >= 0.75 ? 'great' : 'ok';
+    if (o >= 0 && o <= off && done > 0) cls = pct >= 0.75 ? 'great' : 'ok';
     const label = (o <= off && o >= 0 && done > 0) ? Math.round(pct * 100) + '%' : DFULL[i].slice(0,1);
     wHtml += '<div class="w-day"><div class="w-circle ' + cls + (isToday ? ' today' : '') + '">' + label + '</div><div class="w-day-label">' + DFULL[i] + '</div></div>';
   }
   document.getElementById('week-grid').innerHTML = wHtml;
 
+  // Rolling 90-day window centred on today
   let dots = '';
-  for (let i = 0; i < TOTAL_DAYS; i++) {
+  const winStart = Math.max(0, off - 44);
+  const winEnd = winStart + DOT_WINDOW - 1;
+  for (let i = winStart; i <= winEnd; i++) {
     const k = getKey(i);
     const dd = state.days[k];
     const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
@@ -782,7 +861,7 @@ function renderProgress() {
     dots += '<div class="cdot ' + cls + '" title="Day ' + (i + 1) + '"></div>';
   }
   document.getElementById('dot-grid').innerHTML = dots;
-  document.getElementById('dot-map-sub').textContent = 'Day ' + (off + 1) + ' of 90';
+  document.getElementById('dot-map-sub').textContent = 'Day ' + (off + 1);
 
   let best = 0, cur = 0;
   for (let i = 0; i <= off; i++) {
@@ -832,7 +911,11 @@ function render() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('fi-smart').addEventListener('keydown', e => { if (e.key === 'Enter') lookupFood(); });
+  const smartInput = document.getElementById('fi-smart');
+  smartInput.addEventListener('keydown', e => { if (e.key === 'Enter') lookupFood(); });
+  smartInput.addEventListener('input', e => { renderSuggestions(e.target.value.trim()); });
+  smartInput.addEventListener('blur', () => { setTimeout(() => { const b = document.getElementById('suggestions-box'); if (b) b.style.display = 'none'; }, 200); });
+  smartInput.addEventListener('focus', e => { if (e.target.value.trim()) renderSuggestions(e.target.value.trim()); });
 });
 
 load();
