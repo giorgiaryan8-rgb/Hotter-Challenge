@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="90-Day Challenge">
-<title>90-Day Challenge</title>
+<meta name="apple-mobile-web-app-title" content="Health Tracker">
+<title>Health Tracker</title>
 <style>
   :root {
     --teal: #1D9E75; --teal-light: #E1F5EE; --teal-dark: #0F6E56; --teal-deep: #085041;
@@ -175,13 +175,31 @@
   .mt8 { margin-top: 8px; }
   .mt12 { margin-top: 12px; }
   .hint { font-size: 12px; color: var(--text-hint); padding: 0 2px; }
+
+  /* MONTH CALENDAR */
+  .month-nav-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .month-nav-btn { width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid var(--border-mid); background: var(--white); font-size: 20px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .month-nav-btn:active { background: var(--gray-light); }
+  .month-title { font-size: 16px; font-weight: 600; }
+  .month-card { background: var(--white); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 12px 12px 10px; margin-bottom: 12px; }
+  .month-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 6px; }
+  .dow-label { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-hint); padding: 2px 0; }
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .mcell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--text-hint); background: transparent; position: relative; cursor: default; }
+  .mcell.has-data { color: var(--text); }
+  .mcell.strong { background: var(--teal-light); color: var(--teal-deep); }
+  .mcell.partial { background: var(--gray-light); color: var(--text-secondary); }
+  .mcell.flex-day { background: var(--amber-light); color: var(--amber-dark); }
+  .mcell.is-today { outline: 2px solid var(--teal); outline-offset: -2px; border-radius: 6px; font-weight: 700; }
+  .mcell.future { color: var(--gray-mid); }
+  .month-legend { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-row">
-    <div class="app-name">90-Day Challenge</div>
+    <div class="app-name">Health Tracker</div>
     <div class="day-nav">
       <button class="nav-btn" onclick="changeDay(-1)">&#8249;</button>
       <div class="day-chip" id="day-chip">Today</div>
@@ -255,6 +273,7 @@
         <input class="smart-input" type="text" id="fi-smart" placeholder="What did you eat?" />
         <button class="lookup-btn" id="lookup-btn" onclick="lookupFood()">Look up</button>
       </div>
+      <div id="suggestions-box" style="display:none;background:var(--white);border:1px solid var(--border-mid);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;"></div>
       <div class="lookup-error" id="lookup-error"></div>
       <div class="lookup-result" id="lookup-result">
         <div class="lookup-result-name" id="lr-name"></div>
@@ -297,24 +316,29 @@
 
   <!-- PROGRESS -->
   <div id="panel-progress" class="panel">
-    <div class="section-head">This week</div>
-    <div class="week-grid" id="week-grid"></div>
-    <div class="dot-map-card">
-      <div class="dot-map-head">
-        <span class="dot-map-title">90-day map</span>
-        <span class="dot-map-sub" id="dot-map-sub">Day 1</span>
+    <div class="month-nav-row">
+      <button class="month-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+      <div class="month-title" id="month-title">June 2026</div>
+      <button class="month-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+    </div>
+    <div class="month-card">
+      <div class="month-dow-row">
+        <div class="dow-label">Sun</div><div class="dow-label">Mon</div><div class="dow-label">Tue</div>
+        <div class="dow-label">Wed</div><div class="dow-label">Thu</div><div class="dow-label">Fri</div><div class="dow-label">Sat</div>
       </div>
-      <div class="dot-grid" id="dot-grid"></div>
-      <div class="dot-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Strong day</div>
+      <div class="month-grid" id="month-grid"></div>
+      <div class="month-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Strong (&ge;75%)</div>
         <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>Flex day</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#E0DED8"></div>Upcoming</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#EFEFEC"></div>Partial</div>
       </div>
     </div>
     <div class="section-head mt12">Stats</div>
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Best streak</div><div class="stat-val good" id="stat-streak">0</div><div class="stat-sub">days in a row</div></div>
-      <div class="stat-card"><div class="stat-label">Avg completion</div><div class="stat-val" id="stat-avg">0%</div><div class="stat-sub">past 7 days</div></div>
+      <div class="stat-card"><div class="stat-label">Current streak</div><div class="stat-val good" id="stat-streak">0</div><div class="stat-sub">days in a row</div></div>
+      <div class="stat-card"><div class="stat-label">This month</div><div class="stat-val" id="stat-avg">0%</div><div class="stat-sub">avg completion</div></div>
+      <div class="stat-card"><div class="stat-label">Total days</div><div class="stat-val" id="stat-total-days">1</div><div class="stat-sub">since you started</div></div>
+      <div class="stat-card"><div class="stat-label">Strong days</div><div class="stat-val good" id="stat-strong">0</div><div class="stat-sub">75%+ habits done</div></div>
     </div>
   </div>
 
@@ -351,7 +375,6 @@ const START_DATE = new Date(2026, 5, 23);
 const CAL_TARGET = 1775;
 const PROT_TARGET = 115;
 const TREAT_MAX = 18;
-const DOT_WINDOW = 90; // rolling window shown in progress map
 
 // Built-in favourites (Giorgia's common foods)
 const DEFAULT_FAVS = [
@@ -401,6 +424,7 @@ const SCHEDULE = [
 ];
 
 let state = { offset: 0, days: {} };
+let viewMonth = { year: new Date().getFullYear(), month: new Date().getMonth() };
 let userFavs = [];
 let foodMemory = []; // remembered manual entries
 let pendingFood = null;
@@ -699,24 +723,18 @@ function getSuggestions(query) {
 }
 
 function renderSuggestions(query) {
-  let box = document.getElementById('suggestions-box');
+  const box = document.getElementById('suggestions-box');
+  if (!box) return;
   const suggestions = getSuggestions(query);
-  if (!suggestions.length || !query) { if (box) box.style.display = 'none'; return; }
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'suggestions-box';
-    box.style.cssText = 'background:var(--white);border:1px solid var(--border-mid);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;';
-    const row = document.getElementById('fi-smart').parentNode;
-    row.parentNode.insertBefore(box, row.nextSibling);
-  }
+  if (!suggestions.length || !query) { box.style.display = 'none'; return; }
   box.style.display = 'block';
-  box.innerHTML = suggestions.map((s, i) =>
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:0.5px solid var(--border);cursor:pointer;font-size:13px;" onclick="selectSuggestion(' + i + ')">'
-    + '<span>' + s.name + '</span>'
-    + '<span style="color:var(--text-hint);font-size:12px;">' + s.cal + ' kcal · ' + s.prot + 'g</span>'
-    + '</div>'
-  ).join('').replace(/border-bottom[^;]+;([^<]*<\/div>\s*$)/, '$1');
-  // Store suggestions for selection
+  box.innerHTML = suggestions.map((s, i) => {
+    const border = i < suggestions.length - 1 ? 'border-bottom:0.5px solid var(--border);' : '';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;' + border + 'cursor:pointer;font-size:13px;active:background:var(--gray-bg)" onmousedown="selectSuggestion(' + i + ')">'
+      + '<span>' + s.name + '</span>'
+      + '<span style="color:var(--text-hint);font-size:12px;margin-left:8px;white-space:nowrap;">' + s.cal + ' kcal · ' + s.prot + 'g</span>'
+      + '</div>';
+  }).join('');
   box._suggestions = suggestions;
 }
 
@@ -752,7 +770,8 @@ function renderDayLabel() {
   d.setDate(d.getDate() + state.offset);
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const chip = state.offset === 0 ? 'Today · ' + DAYS[d.getDay()] : DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+  const isToday = state.offset === getTodayOffset();
+  const chip = isToday ? 'Today · ' + DAYS[d.getDay()] : DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
   document.getElementById('day-chip').textContent = chip;
   document.getElementById('day-badge').textContent = 'Day ' + (state.offset + 1);
 }
@@ -827,61 +846,95 @@ function updateNutritionPanel() {
   document.getElementById('food-log-total').textContent = d.foods.length > 0 ? totalCal + ' kcal · ' + totalProt + 'g protein' : '';
 }
 
+function changeMonth(dir) {
+  viewMonth.month += dir;
+  if (viewMonth.month > 11) { viewMonth.month = 0; viewMonth.year++; }
+  if (viewMonth.month < 0) { viewMonth.month = 11; viewMonth.year--; }
+  renderProgress();
+}
+
 function renderProgress() {
-  const off = state.offset;
-  const d = new Date(START_DATE);
-  d.setDate(d.getDate() + off);
-  const dow = d.getDay();
-  const DFULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let wHtml = '';
-  for (let i = 0; i < 7; i++) {
-    const o = off - dow + i;
-    const isToday = o === off;
-    const key = getKey(o);
-    const dd = state.days[key];
-    const n = totalHabits();
-    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
-    const pct = done / n;
-    let cls = '';
-    if (o >= 0 && o <= off && done > 0) cls = pct >= 0.75 ? 'great' : 'ok';
-    const label = (o <= off && o >= 0 && done > 0) ? Math.round(pct * 100) + '%' : DFULL[i].slice(0,1);
-    wHtml += '<div class="w-day"><div class="w-circle ' + cls + (isToday ? ' today' : '') + '">' + label + '</div><div class="w-day-label">' + DFULL[i] + '</div></div>';
-  }
-  document.getElementById('week-grid').innerHTML = wHtml;
+  const todayOff = getTodayOffset();
+  const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-title').textContent = MONTHS_LONG[viewMonth.month] + ' ' + viewMonth.year;
 
-  // Rolling 90-day window centred on today
-  let dots = '';
-  const winStart = Math.max(0, off - 44);
-  const winEnd = winStart + DOT_WINDOW - 1;
-  for (let i = winStart; i <= winEnd; i++) {
+  const now = new Date();
+  const firstDay = new Date(viewMonth.year, viewMonth.month, 1);
+  const lastDay = new Date(viewMonth.year, viewMonth.month + 1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+  const daysInMonth = lastDay.getDate();
+  const n = totalHabits();
+
+  let grid = '';
+  // Empty cells before first day
+  for (let i = 0; i < startDow; i++) {
+    grid += '<div class="mcell"></div>';
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cellDate = new Date(viewMonth.year, viewMonth.month, day);
+    const cellKey = cellDate.toISOString().slice(0, 10);
+    const isRealToday = cellDate.getFullYear() === now.getFullYear() && cellDate.getMonth() === now.getMonth() && cellDate.getDate() === now.getDate();
+    const isFuture = cellDate > now;
+    const beforeStart = cellDate < new Date(START_DATE.getFullYear(), START_DATE.getMonth(), START_DATE.getDate());
+
+    const dd = state.days[cellKey];
+    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+    const pct = n > 0 ? done / n : 0;
+    const isFlex = dd && dd.isTreat;
+
+    let cls = 'mcell';
+    if (isFuture || beforeStart) {
+      cls += ' future';
+    } else if (done > 0) {
+      cls += ' has-data';
+      if (isFlex) cls += ' flex-day';
+      else if (pct >= 0.75) cls += ' strong';
+      else cls += ' partial';
+    }
+    if (isRealToday) cls += ' is-today';
+
+    grid += '<div class="' + cls + '">' + day + '</div>';
+  }
+
+  document.getElementById('month-grid').innerHTML = grid;
+
+  // Stats — streak
+  let streak = 0;
+  for (let i = todayOff; i >= 0; i--) {
     const k = getKey(i);
     const dd = state.days[k];
     const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
-    let cls = i === off ? 'today' : (i < off ? (dd && dd.isTreat ? 'treat' : (done > 0 ? 'done' : '')) : '');
-    dots += '<div class="cdot ' + cls + '" title="Day ' + (i + 1) + '"></div>';
+    if (done > 0) streak++;
+    else break;
   }
-  document.getElementById('dot-grid').innerHTML = dots;
-  document.getElementById('dot-map-sub').textContent = 'Day ' + (off + 1);
+  document.getElementById('stat-streak').textContent = streak;
 
-  let best = 0, cur = 0;
-  for (let i = 0; i <= off; i++) {
-    const k = getKey(i);
+  // Stats — this month avg
+  let mTotal = 0, mDone = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cellDate = new Date(viewMonth.year, viewMonth.month, day);
+    if (cellDate > now) break;
+    if (cellDate < new Date(START_DATE.getFullYear(), START_DATE.getMonth(), START_DATE.getDate())) continue;
+    const k = cellDate.toISOString().slice(0, 10);
     const dd = state.days[k];
-    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
-    if (done > 0) { cur++; if (cur > best) best = cur; } else cur = 0;
+    mTotal += n;
+    mDone += dd ? Object.values(dd.checked).filter(Boolean).length : 0;
   }
-  document.getElementById('stat-streak').textContent = best;
-
-  let wt = 0, wd = 0;
-  for (let i = Math.max(0, off - 6); i <= off; i++) {
-    const k = getKey(i);
-    const dd = state.days[k];
-    wt += totalHabits();
-    wd += dd ? Object.values(dd.checked).filter(Boolean).length : 0;
-  }
-  const avgPct = wt > 0 ? Math.round(wd / wt * 100) : 0;
+  const avgPct = mTotal > 0 ? Math.round(mDone / mTotal * 100) : 0;
   document.getElementById('stat-avg').textContent = avgPct + '%';
   document.getElementById('stat-avg').className = 'stat-val' + (avgPct >= 75 ? ' good' : (avgPct < 50 ? ' warn' : ''));
+
+  // Total days since start
+  document.getElementById('stat-total-days').textContent = todayOff + 1;
+
+  // Strong days total
+  let strongDays = 0;
+  Object.entries(state.days).forEach(([k, dd]) => {
+    const done = dd ? Object.values(dd.checked).filter(Boolean).length : 0;
+    if (done / n >= 0.75) strongDays++;
+  });
+  document.getElementById('stat-strong').textContent = strongDays;
 }
 
 function renderSchedule() {
